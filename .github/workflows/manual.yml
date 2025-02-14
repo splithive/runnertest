@@ -1,0 +1,103 @@
+name: macOS Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test-mac:
+    runs-on: splithive  # Our custom runner label
+    name: macOS Tests
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: System Info
+      run: |
+        echo "🖥️ macOS Version:"
+        sw_vers
+        
+        echo "\n🏃‍♂️ Runner Info:"
+        uname -a
+        
+        echo "\n💻 CPU Info:"
+        sysctl -n machdep.cpu.brand_string
+        
+        echo "\n🧮 Memory Info:"
+        top -l 1 | grep PhysMem
+        
+        echo "\n💽 Disk Space:"
+        df -h /
+
+    - name: Test Command Line Tools
+      run: |
+        echo "📦 Homebrew Version:"
+        brew --version || echo "Homebrew not installed"
+        
+        echo "\n🐍 Python Version:"
+        python3 --version
+        
+        echo "\n⚙️ Git Version:"
+        git --version
+        
+        echo "\n🔨 Xcode Tools:"
+        xcode-select -p || echo "Xcode tools not installed"
+
+    - name: Test Network
+      run: |
+        echo "🌐 Network Test:"
+        ping -c 4 github.com
+        
+        echo "\n🔍 DNS Resolution:"
+        dig github.com +short
+        
+        echo "\n🌍 Public IP:"
+        curl -s https://api.ipify.org
+
+    - name: Test File Operations
+      run: |
+        echo "📝 File Operations Test"
+        echo "Hello from macOS!" > test.txt
+        cat test.txt
+        mkdir -p test/nested
+        touch test/nested/file.txt
+        find test -type f
+        ls -la test/nested
+
+    - name: Test Process Management
+      run: |
+        echo "⚡ Process Test:"
+        ps aux | head -5
+        
+        echo "\n🔝 Top Processes:"
+        top -l 1 -n 5 -stats pid,command,cpu,mem
+
+    - name: Test Environment
+      run: |
+        echo "🌳 Environment Variables:"
+        env | sort
+        
+        echo "\n📍 Working Directory:"
+        pwd
+        ls -la
+
+    - name: Test Permissions
+      run: |
+        echo "🔒 Current User:"
+        whoami
+        
+        echo "\n👥 Groups:"
+        groups
+        
+        echo "\n📂 Home Directory Permissions:"
+        ls -la ~/ | head -5
+
+    - name: Cleanup
+      if: always()
+      run: |
+        echo "🧹 Cleaning up..."
+        rm -rf test test.txt
+        echo "✨ Cleanup complete"
