@@ -1,0 +1,164 @@
+name: macOS Test Suite
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  test-mac:
+    runs-on: splithive
+    name: macOS Tests
+    concurrency: 
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: System Information
+      run: |
+        echo "🖥️ macOS Version:"
+        sw_vers
+        
+        echo "\n🏃‍♂️ Runner Info:"
+        uname -a
+        
+        echo "\n💻 CPU Info:"
+        sysctl -n machdep.cpu.brand_string
+        system_profiler SPHardwareDataType
+        
+        echo "\n🧮 Memory Info:"
+        top -l 1 | grep PhysMem
+        vm_stat
+        
+        echo "\n💽 Disk Space:"
+        df -h /
+        diskutil list
+
+    - name: Development Tools
+      run: |
+        echo "📦 Homebrew Status:"
+        which brew || echo "Homebrew not installed"
+        brew --version || echo "Homebrew not installed"
+        
+        echo "\n🐍 Python Environment:"
+        which python3
+        python3 --version
+        pip3 list
+        
+        echo "\n⚙️ Git Configuration:"
+        git --version
+        git config --list
+        
+        echo "\n🔨 Xcode Tools:"
+        xcode-select -p || echo "Xcode tools not installed"
+        xcrun --version || echo "xcrun not available"
+        
+        echo "\n🛠️ Compiler Versions:"
+        gcc --version || echo "GCC not installed"
+        clang --version || echo "Clang not installed"
+
+    - name: Network Tests
+      run: |
+        echo "🌐 Network Interfaces:"
+        ifconfig
+        
+        echo "\n🔌 Network Status:"
+        networksetup -listallhardwareports
+        
+        echo "\n📡 Wireless Info:"
+        /System/Library/PrivateFrameworks/Apple80211.framework/Versions/Current/Resources/airport -I || echo "Airport command not available"
+        
+        echo "\n🌍 Connectivity Tests:"
+        ping -c 4 github.com
+        curl -I https://github.com
+        
+        echo "\n🔍 DNS Resolution:"
+        dig github.com +short
+        scutil --dns
+        
+        echo "\n🌐 Public IP:"
+        curl -s https://api.ipify.org
+        
+        echo "\n🔒 SSL/TLS Support:"
+        openssl version
+
+    - name: File System Tests
+      run: |
+        echo "📝 Basic File Operations:"
+        echo "Hello from macOS!" > test.txt
+        cat test.txt
+        mkdir -p test/nested/deep
+        touch test/nested/deep/file.txt
+        
+        echo "\n📂 File Permissions:"
+        ls -la
+        umask
+        
+        echo "\n🔍 File Search:"
+        find test -type f
+        
+        echo "\n💾 File System Info:"
+        mount
+        
+        echo "\n📊 File System Usage:"
+        du -sh test
+
+    - name: Process Management
+      run: |
+        echo "⚡ Active Processes:"
+        ps aux | head -5
+        
+        echo "\n🔝 Resource Usage:"
+        top -l 1 -n 5 -stats pid,command,cpu,mem
+        
+        echo "\n💻 System Load:"
+        sysctl vm.loadavg
+        
+        echo "\n🧵 Thread Count:"
+        ps -M $$ | wc -l
+
+    - name: Environment & Security
+      run: |
+        echo "🌳 Environment Variables:"
+        env | sort
+        
+        echo "\n👤 User Information:"
+        id
+        groups
+        
+        echo "\n🔐 Security Settings:"
+        csrutil status || echo "SIP status not available"
+        
+        echo "\n🔒 Keychain Access:"
+        security list-keychains
+        
+        echo "\n📍 Working Directory:"
+        pwd
+        ls -la
+
+    - name: Performance Tests
+      run: |
+        echo "⚡ Disk Speed Test:"
+        dd if=/dev/zero of=speedtest bs=1024k count=1024 conv=fdatasync
+        rm speedtest
+        
+        echo "\n🧮 CPU Performance:"
+        python3 -c "import time; st=time.time(); [x**2 for x in range(1000000)]; print(f'Time: {time.time()-st:.2f}s')"
+        
+        echo "\n💾 Memory Speed:"
+        vm_stat 1 5
+
+    - name: Cleanup
+      if: always()
+      run: |
+        echo "🧹 Cleaning up..."
+        rm -rf test test.txt
+        echo "✨ Cleanup complete"
+        
+        echo "\n📊 Final System Status:"
+        top -l 1 -n 0
+        df -h /
